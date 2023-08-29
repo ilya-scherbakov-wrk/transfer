@@ -1,5 +1,8 @@
+import binascii
+import os
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.core.validators import MinValueValidator
@@ -61,3 +64,28 @@ class UserTransaction(models.Model):
         deposit = cls.objects.filter(user=user, mark='deposit').aggregate(s=Sum('amount'))['s'] or 0
         withdraw = cls.objects.filter(user=user, mark='withdraw').aggregate(s=Sum('amount'))['s'] or 0
         return deposit - withdraw
+
+
+class Token(models.Model):
+    key = models.CharField(max_length=40, primary_key=True, verbose_name='Ключ')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name='auth_tokens',
+        on_delete=models.CASCADE, verbose_name='Пользователь'
+    )
+    created_at = models.DateTimeField('Создано', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'токен'
+        verbose_name_plural = 'REST-Токены'
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.get_random_token()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.key
+
+    @classmethod
+    def get_random_token(cls):
+        return binascii.hexlify(os.urandom(20)).decode()

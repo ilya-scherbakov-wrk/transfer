@@ -17,16 +17,15 @@ class UserReadOnlySerializer(ModelSerializer):
 class UserTransactionSerializer(ModelSerializer):
     class Meta:
         model = UserTransaction
-        fields = ('user', 'amount', 'mark', 'created_at', )
+        fields = ('amount', 'mark', 'created_at', )
         read_only_fields = ['id', ]
 
     def validate(self, attrs):
-        user = attrs.get('user')
         amount = attrs.get('amount')
         mark = attrs.get('mark')
 
         if mark == UserTransaction.WITHDRAW:
-            if amount > UserTransaction.get_total(user):
+            if amount > UserTransaction.get_total(self.context['request'].user):
                 raise ValidationError({'error': 'Не достаточно средств.'})
 
         return attrs
