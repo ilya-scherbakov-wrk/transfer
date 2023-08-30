@@ -17,7 +17,10 @@ class ReadOnlySerializerMixin(ModelSerializer):
 class UserReadOnlySerializer(ReadOnlySerializerMixin):
     class Meta:
         model = User
-        fields = ('id', 'email', )
+        fields = (
+            'id',
+            'email',
+        )
 
 
 class UserTransactionReadOnlySerializer(ReadOnlySerializerMixin):
@@ -25,7 +28,11 @@ class UserTransactionReadOnlySerializer(ReadOnlySerializerMixin):
 
     class Meta:
         model = UserTransaction
-        fields = ('amount', 'created_at', 'transaction_type', )
+        fields = (
+            'amount',
+            'created_at',
+            'transaction_type',
+        )
 
     def get_transaction_type(self, user_transaction):
         user = self.context['request'].user
@@ -35,8 +42,14 @@ class UserTransactionReadOnlySerializer(ReadOnlySerializerMixin):
 class UserTransactionSerializer(ModelSerializer):
     class Meta:
         model = UserTransaction
-        fields = ('recipient', 'amount', 'created_at', )
-        read_only_fields = ['id', ]
+        fields = (
+            'recipient',
+            'amount',
+            'created_at',
+        )
+        read_only_fields = [
+            'id',
+        ]
 
     def validate(self, attrs):
         recipient = attrs.get('recipient')
