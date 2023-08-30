@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum
@@ -39,16 +40,12 @@ class UserTransaction(models.Model):
     DEPOSIT = 'deposit'
     WITHDRAW = 'withdraw'
 
-    MARK_CHOICES = (
-        (DEPOSIT, 'Пополнение'),
-        (WITHDRAW, 'Списание'),
-    )
-
-    user = models.ForeignKey(User, related_name='user_transactions', on_delete=models.PROTECT,
-                             verbose_name='Пользователь')
+    owner = models.ForeignKey(User, related_name='owner_transactions', on_delete=models.PROTECT,
+                             verbose_name='Отправитель', null=True, blank=True)
+    recipient = models.ForeignKey(User, related_name='recipient_transactions', on_delete=models.PROTECT,
+                             verbose_name='Получатель')
     amount = models.DecimalField(decimal_places=2, max_digits=10, verbose_name='Сумма',
                                  validators=[MinValueValidator(Decimal('0.01'))])
-    mark = models.CharField(choices=MARK_CHOICES, max_length=8, verbose_name='Тип транзакции')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано в')
 
     class Meta:
@@ -57,13 +54,19 @@ class UserTransaction(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.user} {"+" if self.mark == self.DEPOSIT else "-"}{self.amount}'
+        return f'{self.owner} - {self.amount} - {self.recipient}'
 
     @classmethod
     def get_total(cls, user):
-        deposit = cls.objects.filter(user=user, mark='deposit').aggregate(s=Sum('amount'))['s'] or 0
-        withdraw = cls.objects.filter(user=user, mark='withdraw').aggregate(s=Sum('amount'))['s'] or 0
+        deposit = cls.objects.filter(recipient=user).aggregate(s=Sum('amount'))['s'] or 0
+        withdraw = cls.objects.filter(owner=user).aggregate(s=Sum('amount'))['s'] or 0
         return deposit - withdraw
+
+    def get_transaction_type(self, user):
+        if user == self.owner:
+            return self.WITHDRAW
+        elif user == self.recipient:
+            return self.DEPOSIT
 
 
 class Token(models.Model):
