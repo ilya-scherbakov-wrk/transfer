@@ -74,6 +74,7 @@ class UserTransaction(models.Model):
             return self.WITHDRAW
         elif user == self.recipient:
             return self.DEPOSIT
+        raise NotImplementedError
 
 
 class Token(models.Model):

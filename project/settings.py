@@ -148,3 +148,5 @@ SWAGGER_SETTINGS = {
     },
     'doc_expansion': 'none',
 }
+
+ATOMIC_REQUESTS = True
